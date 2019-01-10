@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="BottomBarBg">
+        <attr name="bottombar_heigh" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="ClipZoomImageView">
+        <!--确定剪裁框的四个属性, 距离imageview的左上右下-->
+        <attr name="clipleft" format="dimension" />
+        <attr name="cliptop" format="dimension" />
+        <attr name="clipright" format="dimension" />
+        <attr name="clipbottom" format="dimension" />
+        <attr name="hasclip" format="boolean" />
+        <attr name="scalemode" format="integer" />
+        <!--是否处在viewpager中-->
+        <attr name="forvp" format="boolean" />
+        <attr name="canzoom" format="boolean" />
+    </declare-styleable>
+
+    <declare-styleable name="ClipCoveredViewStyle">
+        <!-- 截屏时画的一个透明矩形,周围是黑色透明，这里代表黑色透明区域的左上右下宽度值,除去黑色区域,剩下的就是透明区域 -->
+        <attr name="left_gap" format="dimension" />
+        <attr name="top_gap" format="dimension" />
+        <attr name="right_gap" format="dimension" />
+        <attr name="bottom_gap" format="dimension" />
+        <!-- 外围区域的填充颜色 -->
+        <attr name="out_fill_color" format="color" />
+
+        <!-- 矩形透明区域是有边框和横竖线的，下面规定了一些边框和横竖线的属性 -->
+        <!-- 边框线的宽度 -->
+        <attr name="frame_line_width" format="dimension" />
+        <!-- 内部线条的宽度 -->
+        <attr name="inner_line_width" format="dimension" />
+        <!-- 内部线条的颜色 -->
+        <attr name="inner_line_color" format="color" />
+        <!-- 内部线条的个数 -->
+        <attr name="inner_line_horizontal_count" format="integer" />
+        <attr name="inner_line_vertical_count" format="integer" />
+        <!-- 小部件1 默认会画在截图区域左上角 -->
+        <attr name="widget_first" format="reference" />
+        <!-- 小部件1距离截图区域左边距离 -->
+        <attr name="widget_first_paddingLeft" format="dimension" />
+        <!-- 小部件1距离截图区域上边距离 -->
+        <attr name="widget_first_paddingTop" format="dimension" />
+        <!-- 小部件2 -->
+        <attr name="widget_second" format="reference" />
+        <!-- 小部件2距离截图区域左边距离 -->
+        <attr name="widget_second_paddingRight" format="dimension" />
+        <!-- 小部件2距离截图区域上边距离 -->
+        <attr name="widget_second_paddingTop" format="dimension" />
+    </declare-styleable>
+
+    <declare-styleable name="TagCloudView">
+        <attr name="tcvBackground" format="reference"/>
+        <attr name="tcvTextColor" format="color"/>
+        <attr name="tcvBorder" format="dimension"/>
+        <attr name="tcvTextSize" format="integer"/>
+        <attr name="tcvBorderItem" format="dimension"/>
+        <attr name="tcvItemBorderVertical" format="dimension"/>
+        <attr name="tcvItemBorderHorizontal" format="dimension"/>
+
+        <attr name="tcvSingleLine" format="boolean"/>
+        <attr name="tcvShowEndText" format="boolean"/>
+        <attr name="tcvShowRightImg" format="boolean"/>
+        <attr name="tcvEndText" format="string"/>
+        <attr name="tcvRightResId" format="reference"/>
+        <attr name="tcvCanTagClick" format="boolean"/>
+
+        <attr name="tcvTagResId" format="reference"/>
+    </declare-styleable>
+</resources>
