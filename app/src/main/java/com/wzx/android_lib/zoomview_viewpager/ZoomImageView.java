@@ -33,7 +33,7 @@ public class ZoomImageView extends AppCompatImageView {
     private float mLastX;
     private float mLastY;
     private Matrix mMatrix = new Matrix();
-
+    private float mZoomScaleDelta = 0.04f; //手指缩放的敏感系数, 越大越灵敏, 越小越细腻
     /**
      * 初始填充的缩放(当前的缩放), 和允许最小的最大的缩放系数, 和双击图片时来回切换的系数
      */
@@ -309,21 +309,6 @@ public class ZoomImageView extends AppCompatImageView {
         setImageMatrix(mMatrix);
     }
 
-    private void setCenter(MotionEvent event) {
-        try {
-            int pointerCount = event.getPointerCount();
-            if (pointerCount == 1) {
-                mCenter.set(event.getX(), event.getY());
-            } else {
-                float x = (event.getX(1) + event.getX(0)) * 0.5f;
-                float y = (event.getY(1) + event.getY(0)) * 0.5f;
-                mCenter.set(x, y);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -391,6 +376,25 @@ public class ZoomImageView extends AppCompatImageView {
         } catch (Exception e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    /**
+     * 设置缩放动画的中心点位置
+     * @param event
+     */
+    private void setCenter(MotionEvent event) {
+        try {
+            int pointerCount = event.getPointerCount();
+            if (pointerCount == 1) {
+                mCenter.set(event.getX(), event.getY());
+            } else {
+                float x = (event.getX(1) + event.getX(0)) * 0.5f;
+                float y = (event.getY(1) + event.getY(0)) * 0.5f;
+                mCenter.set(x, y);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -536,10 +540,10 @@ public class ZoomImageView extends AppCompatImageView {
                     }
                     mOldDistant = mCurrentDistant;
 
-                    if (scaleFactor > 1.03f) {
-                        scaleFactor = 1.03f;
-                    } else if (scaleFactor < 0.97f) {
-                        scaleFactor = 0.97f;
+                    if (scaleFactor > 1f + mZoomScaleDelta) {
+                        scaleFactor = 1f + mZoomScaleDelta;
+                    } else if (scaleFactor < 1f - mZoomScaleDelta) {
+                        scaleFactor = 1f - mZoomScaleDelta;
                     }
                     setCenter(event);
                     zoomImg(scaleFactor);
