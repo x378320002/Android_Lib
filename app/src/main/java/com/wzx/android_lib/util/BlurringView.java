@@ -10,7 +10,6 @@ import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.View;
 
 /**
@@ -45,6 +44,7 @@ public class BlurringView extends View {
     private int mBlurRadius;
     private int mDownsampleFactor;
     private int mOverlayColor;
+    //高斯view的draw是被被模糊view的draw调用的, 高斯view的draw中又会调用此被模糊的draw, 为了防止递归循环调用,需要检测是否被调用过了, 如果调用过了, 设置为false, 时下次draw再调用
     private boolean mBlurDrawed;
     private View mBlurredView;
     private int mBlurredViewWidth, mBlurredViewHeight;
