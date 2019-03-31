@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.refreshlayout;
+package com.wzx.wzxfoundation.widget.refreshlayout;
 
 import android.content.Context;
 import android.support.annotation.AttrRes;
@@ -7,13 +7,8 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
 import android.widget.FrameLayout;
-import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
+
 import com.wzx.wzxfoundation.R;
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrUIHandler;

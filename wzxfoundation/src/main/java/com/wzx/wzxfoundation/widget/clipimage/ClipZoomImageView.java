@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.zoomview_viewpager;
+package com.wzx.wzxfoundation.widget.clipimage;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
@@ -19,25 +19,25 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.AppCompatImageView;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ViewConfiguration;
-import android.view.ViewParent;
 import android.view.animation.DecelerateInterpolator;
+
 import com.wzx.wzxfoundation.R;
+import com.wzx.wzxfoundation.util.LogHelper;
 
 /**
- * 剪裁用的imageview, 支持放大缩小
+ * 剪裁用的imageview
  */
-public class ZoomImageView extends AppCompatImageView {
+public class ClipZoomImageView extends AppCompatImageView {
     private float mLastX;
     private float mLastY;
     private Matrix mMatrix = new Matrix();
-    private float mZoomScaleDelta = 0.04f; //手指缩放的敏感系数, 越大越灵敏, 越小越细腻
+
     /**
-     * 初始填充的缩放(当前的缩放), 和允许最小的最大的缩放系数, 和双击图片时来回切换的系数
+     * 初始填充的缩放, 和当前的缩放, 和允许最小的最大的缩放系数
      */
-    private float mCurrentScale, mZoomMinScale, mZommMaxScale, mDoubleClickMinScale, mDoubleClickMaxScale;
+    private float mCurrentScale, mZoomMinScale, mZommMaxScale;
 
     //原始bitmap的宽高，当前bitmap的宽高, 本imageview的宽高，
     private float mOriBmpWidth, mOriBmpHeight, mCurrentBmpWidth, mCurrentBmpHeight, mWidth, mHeight;
@@ -66,52 +66,49 @@ public class ZoomImageView extends AppCompatImageView {
     private RectF mEdgeRect; //图片边缘框/Imageview本身的边界
     private int mFirstFillMode = 2; //初始时, 图片显示填充的模式 0:以剪裁框centercrop的模式, 1:以边缘框centercrop的模式, 2以边缘框fitcenter的模式
     private boolean mHasClipRect;
+    private boolean mParentCanScroll;
     /**
      * 判断用户是否开始滑动的，手指防抖裕量
      */
     private int mTouchSlop;
+    private boolean mIsFirstMove; //有静到拖动
     private boolean mIsFirstScale; //由静止到开始双指缩放
     private boolean mIsZoomAniming = false; //是否正在进行缩放回弹的动画中
     private boolean mIsOnLeftSide = false, mIsOnRightSide = false, mIsOnTopSide = false, mIsOnBottomSide = false;
     private int mClipLeft, mClipRight, mClipTop, mClipBottom; //剪裁框距离左右上下边的距离
-    private float[] mConsumeXY; //当拖动图片移动是, 图片x,y方向消耗的当次移动距离
-    private boolean mCanRequestParentDisllowIntercept = true;
 
-    //点击相关begin
-    private float mDownX;
-    private float mDownY;
-    private long mDownTime;
-    private int mDoubleClickDuration = 200; //接受doubleClik点击事件行程的间隔, 大约这个时间不形成双击点击事件
-    private boolean mCanClick;
-    private boolean mDoubleClickZoom; //是否支持双击放大快速切换, 如果支持双击, 那么单击事件就肯定有延迟
-    private OnClickListener mOnClickListener;
-
-    public ZoomImageView(Context context) {
+    public ClipZoomImageView(Context context) {
         this(context, null);
     }
 
-    public ZoomImageView(Context context, AttributeSet attrs) {
+    public ClipZoomImageView(Context context, AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public ZoomImageView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public ClipZoomImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         final ViewConfiguration configuration = ViewConfiguration.get(context);
         mTouchSlop = configuration.getScaledTouchSlop();
-        setScaleType(ScaleType.MATRIX);
+
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ClipZoomImageView);
         try {
-            mHasClipRect = a.getBoolean(R.styleable.ClipZoomImageView_hasclip, false);
-            if (mHasClipRect) {
-                mClipLeft = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipleft, 0);
-                mClipTop = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_cliptop, 0);
-                mClipRight = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipright, 0);
-                mClipBottom = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipbottom, 0);
-            } else {
-                mClipLeft = mClipTop = mClipRight = mClipBottom = 0;
-            }
+            mParentCanScroll = a.getBoolean(R.styleable.ClipZoomImageView_forvp, false);
 
-            mFirstFillMode = a.getInt(R.styleable.ClipZoomImageView_scalemode, 2);
+            if (mParentCanScroll) {
+                mFirstFillMode = 2;
+            } else {
+                mHasClipRect = a.getBoolean(R.styleable.ClipZoomImageView_hasclip, false);
+                if (mHasClipRect) {
+                    mClipLeft = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipleft, 0);
+                    mClipTop = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_cliptop, 0);
+                    mClipRight = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipright, 0);
+                    mClipBottom = a.getDimensionPixelSize(R.styleable.ClipZoomImageView_clipbottom, 0);
+                } else {
+                    mClipLeft = mClipTop = mClipRight = mClipBottom = 0;
+                }
+
+                mFirstFillMode = a.getInt(R.styleable.ClipZoomImageView_scalemode, 0);
+            }
         } finally {
             a.recycle();
         }
@@ -124,7 +121,6 @@ public class ZoomImageView extends AppCompatImageView {
 
     /**
      * 初始时, 图片显示填充的模式 0:以剪裁框centercrop的模式, 1:以边缘框centercrop的模式, 2以边缘框fitcenter的模式
-     *
      * @param mode
      */
     public void setFirstFillMode(int mode) {
@@ -132,16 +128,11 @@ public class ZoomImageView extends AppCompatImageView {
         calcBitmapWH();
     }
 
-    /**
-     * 设置剪切框距离左上右下的距离
-     *
-     * @param left
-     * @param top
-     * @param right
-     * @param bottom
-     */
+    public void setHasClipRect(boolean hasClipRect) {
+        mHasClipRect = hasClipRect;
+    }
+
     public void setClipRect(int left, int top, int right, int bottom) {
-        mHasClipRect = true;
         mClipLeft = left;
         mClipTop = top;
         mClipRight = right;
@@ -167,10 +158,10 @@ public class ZoomImageView extends AppCompatImageView {
             return;
         }
 
-        mClipRect = new RectF(mClipLeft, mClipTop, mWidth - mClipRight, mHeight - mClipBottom);
+        mClipRect = new RectF(mClipLeft, mClipTop, mWidth-mClipRight, mHeight-mClipBottom);
         mEdgeRect = new RectF(0, 0, mWidth, mHeight);
 
-//        Log.d("wangzixu", "calcBitmapWH mClipRect = " + mClipRect + ", mEdgeRect = " + mEdgeRect);
+//        LogHelper.d("wangzixu", "calcBitmapWH mClipRect = " + mClipRect + ", mEdgeRect = " + mEdgeRect);
 
         //模拟系统的形式来处理图片，参考系统源码，imageview中的configureBounds()方法
         if (mFirstFillMode == 0) { //以剪裁框centercrop的模式
@@ -181,12 +172,7 @@ public class ZoomImageView extends AppCompatImageView {
             //初始化一些信息, 主要是初始化三个缩放系数, 后续计算都是根据这些缩放系数计算的
             mCurrentScale = scale;
             mZoomMinScale = scale;
-            mZommMaxScale = mCurrentScale * 4;
-            mDoubleClickMinScale = mZoomMinScale;
-            mDoubleClickMaxScale = mZommMaxScale;
-            if (mDoubleClickMaxScale <= mDoubleClickMinScale + 0.1) {
-                mDoubleClickMaxScale = mZommMaxScale;
-            }
+            mZommMaxScale = mCurrentScale*5;
 
             mCurrentBmpWidth = scale * mOriBmpWidth;
             mCurrentBmpHeight = scale * mOriBmpHeight;
@@ -195,8 +181,8 @@ public class ZoomImageView extends AppCompatImageView {
 
             mMatrixX = mEdgeRect.left + Xoffset * 0.5f;
             mMatrixY = mEdgeRect.top + Yoffset * 0.5f;
-            //Log.d("wangzixu", "clipimg calcBitmapWH called mClipRect = " + mClipRect.toString());
-            //Log.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
+            //LogHelper.d("wangzixu", "clipimg calcBitmapWH called mClipRect = " + mClipRect.toString());
+            //LogHelper.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
 
             mMatrix.setScale(scale, scale);
             mMatrix.postTranslate(Math.round(mMatrixX), Math.round(mMatrixY));
@@ -217,12 +203,7 @@ public class ZoomImageView extends AppCompatImageView {
             } else {
                 mZoomMinScale = Math.min(scaleX, scaleY);
             }
-            mZommMaxScale = mCurrentScale * 4;
-            mDoubleClickMinScale = mZoomMinScale;
-            mDoubleClickMaxScale = mCurrentScale;
-            if (mDoubleClickMaxScale <= mDoubleClickMinScale + 0.1) {
-                mDoubleClickMaxScale = mZommMaxScale;
-            }
+            mZommMaxScale = mCurrentScale*5.0f;
 
             mCurrentBmpWidth = scale * mOriBmpWidth;
             mCurrentBmpHeight = scale * mOriBmpHeight;
@@ -231,7 +212,7 @@ public class ZoomImageView extends AppCompatImageView {
 
             mMatrixX = mEdgeRect.left + Xoffset * 0.5f;
             mMatrixY = mEdgeRect.top + Yoffset * 0.5f;
-//            Log.d("wangzixu", "calcBitmapWH  mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY + ", scale = " + scale);
+//            LogHelper.d("wangzixu", "calcBitmapWH  mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY + ", scale = " + scale);
 
             mMatrix.setScale(scale, scale);
             mMatrix.postTranslate(Math.round(mMatrixX), Math.round(mMatrixY));
@@ -246,8 +227,6 @@ public class ZoomImageView extends AppCompatImageView {
             float scaleX = mEdgeRect.width() / mOriBmpWidth;
             float scaleY = mEdgeRect.height() / mOriBmpHeight;
             float scale = Math.min(scaleX, scaleY);
-            Log.d("wangzixu", "ZoomImg calcBitmapWH mOriBmpWidth = " + mOriBmpWidth
-                    + ", mOriBmpHeight = " + mOriBmpHeight + ", scaleX = " + scaleX + ", scaleY = " + scaleY);
 
             if (mHasClipRect) {//允许的最小缩放系数, 有剪裁框时, 保证图片边缘不能进入剪裁框
                 float clipScale = Math.max(mClipRect.width() / mOriBmpWidth, mClipRect.height() / mOriBmpHeight);
@@ -259,12 +238,7 @@ public class ZoomImageView extends AppCompatImageView {
             //初始化一些信息, 主要是初始化三个缩放系数, 后续计算都是根据这些缩放系数计算的
             mCurrentScale = scale;
             mZoomMinScale = scale;
-            mZommMaxScale = Math.max(scaleX, scaleY) * 4;
-            mDoubleClickMinScale = mZoomMinScale;
-            mDoubleClickMaxScale = Math.max(scaleX, scaleY);
-            if (mDoubleClickMaxScale <= mDoubleClickMinScale + 0.1) {
-                mDoubleClickMaxScale = mZommMaxScale;
-            }
+            mZommMaxScale = Math.max(scaleX, scaleY);
 
             mCurrentBmpWidth = scale * mOriBmpWidth;
             mCurrentBmpHeight = scale * mOriBmpHeight;
@@ -273,8 +247,8 @@ public class ZoomImageView extends AppCompatImageView {
 
             mMatrixX = mEdgeRect.left + Xoffset * 0.5f;
             mMatrixY = mEdgeRect.top + Yoffset * 0.5f;
-            //Log.d("wangzixu", "clipimg calcBitmapWH called mClipRect = " + mClipRect.toString());
-            //Log.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
+            //LogHelper.d("wangzixu", "clipimg calcBitmapWH called mClipRect = " + mClipRect.toString());
+            //LogHelper.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
 
             mMatrix.setScale(scale, scale);
             mMatrix.postTranslate(Math.round(mMatrixX), Math.round(mMatrixY));
@@ -283,12 +257,10 @@ public class ZoomImageView extends AppCompatImageView {
             mRedundantXSpace = mCurrentBmpWidth - mClipRect.width();
             mRedundantYSpace = mCurrentBmpHeight - mClipRect.height();
         }
-
-        checkSide();
     }
 
     /**
-     * 初始化的时候带上了图片的位移等信息, 图片中的bitmap位移和缩放大小
+     * 初始化的时候带上了图片的位移等信息
      */
     public void setClipInitInfo(float offsetX, float offsetY, float clipScale) {
         mCurrentScale = clipScale;
@@ -298,7 +270,7 @@ public class ZoomImageView extends AppCompatImageView {
 
         mMatrixX = offsetX;
         mMatrixY = offsetY;
-        //Log.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
+        //LogHelper.d("wangzixu", "clipimg calcBitmapWH called mMatrixX = " + mMatrixX + ", mMatrixY = " + mMatrixY);
 
         mMatrix.setScale(mCurrentScale, mCurrentScale);
         mMatrix.postTranslate(Math.round(mMatrixX), Math.round(mMatrixY));
@@ -309,10 +281,17 @@ public class ZoomImageView extends AppCompatImageView {
         setImageMatrix(mMatrix);
     }
 
+    private PointF getCenter(PointF centerF, MotionEvent event) {
+        float x = (event.getX(1) + event.getX(0)) * 0.5f;
+        float y = (event.getY(1) + event.getY(0)) * 0.5f;
+        centerF.set(x, y);
+        return centerF;
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
-        Log.d("wangzixu", "clipimageview onSizeChanged w = " + w + ", h = " + h);
+        LogHelper.d("wangzixu", "clipimageview onSizeChanged w = " + w + ", h = " + h);
         mWidth = getWidth();
         mHeight = getHeight();
         if (mWidth != 0 && mHeight != 0) {
@@ -323,7 +302,7 @@ public class ZoomImageView extends AppCompatImageView {
     @Override
     public void setImageBitmap(Bitmap bm) {
         super.setImageBitmap(bm);
-//        Log.d("wangzixu", "ZoomImg calcBitmapWH setImageBitmap bm = " + bm.getWidth() + ", " + bm.getHeight());
+        LogHelper.d("wangzixu", "clipimageview setImageBitmap");
         mBitmap = bm;
         calcBitmapWH();
     }
@@ -332,7 +311,7 @@ public class ZoomImageView extends AppCompatImageView {
 //    @Override
 //    public void setImageDrawable(Drawable drawable) {
 //        super.setImageDrawable(drawable);
-//        Log.d("wangzixu", "clipimageview setImageDrawable");
+//        LogHelper.d("wangzixu", "clipimageview setImageDrawable");
 ////        mBitmap = getBitmapFromDrawable(drawable);
 ////        setup();
 //    }
@@ -379,76 +358,20 @@ public class ZoomImageView extends AppCompatImageView {
         }
     }
 
-    /**
-     * 设置缩放动画的中心点位置
-     * @param event
-     */
-    private void setCenter(MotionEvent event) {
-        try {
-            int pointerCount = event.getPointerCount();
-            if (pointerCount == 1) {
-                mCenter.set(event.getX(), event.getY());
-            } else {
-                float x = (event.getX(1) + event.getX(0)) * 0.5f;
-                float y = (event.getY(1) + event.getY(0)) * 0.5f;
-                mCenter.set(x, y);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void requestParentDisallowIntercept(boolean disallow) {
-        ViewParent parent = getParent();
-        if (parent != null) {
-            parent.requestDisallowInterceptTouchEvent(disallow);
-        }
-    }
-
-    private void initConsumeXy() {
-        if (mConsumeXY == null) {
-            mConsumeXY = new float[2];
-        } else {
-            mConsumeXY[0] = 0f;
-            mConsumeXY[1] = 0f;
-        }
-    }
-
-    public float[] getConsumeXy() {
-        return mConsumeXY;
-    }
-
-    public boolean setCanRequestParentDisllowIntercept(boolean can) {
-        return mCanRequestParentDisllowIntercept = can;
-    }
-
     @Override
     public boolean onTouchEvent(@NonNull MotionEvent event) {
-        float[] touchEvent = handleTouchEvent(event);
-        Log.d("wangzixu", "Zoom onTouchEvent mMode = " + mMode + ", touchEvent = " + touchEvent[0] + ", " + touchEvent[1]);
-
-        if (mCanRequestParentDisllowIntercept
-                && (mMode == ZOOM || mMode == ZOOM_ANIM || touchEvent[0] != 0 || touchEvent[1] != 0)) {
-            requestParentDisallowIntercept(true);
+        if (mParentCanScroll) { //如果父控件是不可滑动的，那么手势自己处理//如果是可以滑动的，手势是由父控件的手势中直接调用
+            return super.onTouchEvent(event);
+        } else {
+            handleTouchEvent(event);
+            return true;
         }
-//        else if (mMode == DRAG) { //说明是拖动状态, 并且无距离消耗, 说明到达了某个边界
-//            requestParentDisallowIntercept(false);
-//        }
-        return true;
     }
 
-    /**
-     * 返回x,y方向上消耗的距离
-     *
-     * @param event
-     * @return
-     */
-    public float[] handleTouchEvent(MotionEvent event) {
-        initConsumeXy();
+    public int handleTouchEvent(MotionEvent event) {
         if (mIsZoomAniming) {
-            return mConsumeXY;
+            return ZOOM_ANIM;
         }
-
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 mMode = NONE;
@@ -456,7 +379,10 @@ public class ZoomImageView extends AppCompatImageView {
                 mDownX = mLastX = event.getX(0);
                 mDownY = mLastY = event.getY(0);
                 mCanClick = true;
-                mDownTime = System.currentTimeMillis();
+                if (mRedundantXSpace > 0 || mRedundantYSpace > 0) {
+                    mMode = DRAG;
+                    mIsFirstMove = true;
+                }
                 break;
             case MotionEvent.ACTION_POINTER_DOWN:
                 mPointCount++;
@@ -467,7 +393,7 @@ public class ZoomImageView extends AppCompatImageView {
 
                 mOldDistant = getDistance(event);
 
-                if (mOldDistant >= mTouchSlop) {
+                if (mOldDistant > mTouchSlop * 2) {
                     mMode = ZOOM;
                     mIsFirstScale = true;
                 }
@@ -478,13 +404,16 @@ public class ZoomImageView extends AppCompatImageView {
                     break;
                 }
                 mMode = NONE;
-                if ((mCurrentScale < mZoomMinScale || mCurrentScale > mZommMaxScale)
-                        && !mIsZoomAniming) {
+                if (mCurrentScale < mZoomMinScale && !mIsZoomAniming) {
                     mMode = ZOOM_ANIM;
                     startScaleAnim(mCurrentScale, mZoomMinScale);
+                } else if (mCurrentScale > mZommMaxScale && !mIsZoomAniming) {
+                    mMode = ZOOM_ANIM;
+                    startScaleAnim(mCurrentScale, mZommMaxScale);
                 } else {
                     if (mRedundantXSpace > 0 || mRedundantYSpace > 0) {
                         mMode = DRAG;
+                        mIsFirstMove = true;
                     }
                     if (mMode == DRAG) {
                         int pointerIndex = event.getActionIndex();
@@ -494,90 +423,82 @@ public class ZoomImageView extends AppCompatImageView {
                 }
                 break;
             case MotionEvent.ACTION_MOVE:
-                if (mMode == NONE && (mRedundantXSpace > 0 || mRedundantYSpace > 0)) { //事件还未确定, 并且可以支持拖动
+                if (mMode == DRAG) {
                     float currentX = event.getX(0);
                     float currentY = event.getY(0);
                     float deltaX = currentX - mLastX;
                     float deltaY = currentY - mLastY;
 
-                    if (Math.abs(deltaX) >= mTouchSlop || Math.abs(deltaY) >= mTouchSlop) { //进入拖动状态
-                        mCanClick = false; //手指动了, 就不能相应点击事件了
-
-                        if ((!mIsOnLeftSide && deltaX > mTouchSlop)
-                                || (!mIsOnRightSide && deltaX < -mTouchSlop)
-                                || (!mIsOnTopSide && deltaY > mTouchSlop)
-                                || (!mIsOnBottomSide && deltaY < -mTouchSlop)) {
-                            mMode = DRAG;
-                            mLastX = currentX;
-                            mLastY = currentY;
-                            mConsumeXY[0] = (int) deltaX;
-                            mConsumeXY[1] = (int) deltaY;
+                    if (mCanClick) {
+                        if (Math.abs(currentX - mDownX) > mTouchSlop || Math.abs(currentY - mDownY) > mTouchSlop) {
+                            mCanClick = false;
                         }
                     }
-                } else if (mMode == DRAG) {
-                    mCanClick = false;
-                    float currentX = event.getX(0);
-                    float currentY = event.getY(0);
-                    float deltaX = currentX - mLastX;
-                    float deltaY = currentY - mLastY;
-                    Log.d("wangzixu", "Zoom onTouchEvent mMode DRAG currentX = " + currentX + ", mLastX = " + mLastX);
+
+                    if (mIsFirstMove) { //第一次，由静到动，移动距离应该大于touchslop,防抖
+                        if (Math.abs(deltaX) > mTouchSlop || Math.abs(deltaY) > mTouchSlop) {
+                            mIsFirstMove = false;
+                            mLastX = currentX;
+                            mLastY = currentY;
+                        }
+                        break;
+                    }
 
                     mLastX = currentX;
                     mLastY = currentY;
-                    Log.d("wangzixu", "Zoom onTouchEvent mMode DRAG deltaX = " + deltaX + ", deltaY = " + deltaY);
-                    mConsumeXY = checkAndSetTranslate(deltaX, deltaY);
+
+                    //由拖动图片转向viewpager滑动的过程
+                    if (mParentCanScroll) {
+                        //在viewpager中，父容器可以滑动，所以要时刻判断图片是否拖动到了边框
+                        if (mRedundantXSpace <= 0) { // 说明图片宽度没有edge边框宽，不能响应图片左右拖动，只能响应上下拖动
+                            if (Math.abs(deltaX) > Math.abs(deltaY)) { //说明当前用户想要左右拖动，应该使父容易滚动
+                                event.setAction(MotionEvent.ACTION_DOWN);
+                                mMode = NONE; //返回none，父viewpager就会自己处理事件
+                                break;
+                            }
+                        } else if ((Math.abs(deltaX) > Math.abs(deltaY)) //首先判断是在左右滑动手势中
+                                && ((mIsOnLeftSide && deltaX > 0) //如果滑到了左边缘，并且继续向右滑动，
+                                || (mIsOnRightSide && deltaX < 0))) { // 如果滑到了右边缘，并且继续向左滑动 应该让父容器接受事件
+                            event.setAction(MotionEvent.ACTION_DOWN);
+                            mMode = NONE; //返回none，父viewpager就会自己处理事件
+                            break;
+                        }
+                    }
+
+                    checkAndSetTranslate(deltaX, deltaY);
                 } else if (mMode == ZOOM) {
                     mCurrentDistant = getDistance(event);
-                    if (mIsFirstScale || mOldDistant == 0) { //初次开始动，总有个突兀的跳变，所以消除掉第一次，防抖
-                        mOldDistant = mCurrentDistant;
+                    float scaleFactor = mCurrentDistant / mOldDistant;
+                    float deltaScale = Math.abs(scaleFactor - 1.0f);
+                    if (deltaScale < 0.001) {
+                        break;
+                    }
+
+                    mOldDistant = mCurrentDistant;
+                    if (mIsFirstScale) { //初次开始动，总有个突兀的跳变，所以消除掉第一次，防抖
                         mIsFirstScale = false;
                         break;
                     }
-                    float scaleFactor = mCurrentDistant / mOldDistant;
-                    float deltaScale = Math.abs(scaleFactor - 1.0f);
-                    if (deltaScale < 0.0001) {
-                        break;
-                    }
-                    mOldDistant = mCurrentDistant;
 
-                    if (scaleFactor > 1f + mZoomScaleDelta) {
-                        scaleFactor = 1f + mZoomScaleDelta;
-                    } else if (scaleFactor < 1f - mZoomScaleDelta) {
-                        scaleFactor = 1f - mZoomScaleDelta;
+                    if (scaleFactor > 1.05f) {
+                        scaleFactor = 1.05f;
+                    } else if (scaleFactor < 0.95f) {
+                        scaleFactor = 0.95f;
                     }
-                    setCenter(event);
+                    getCenter(mCenter, event);
                     zoomImg(scaleFactor);
                 }
                 break;
             case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL:
-                if (mCanClick) {
-                    float deltaX = Math.abs(event.getX() - mDownX);
-                    float deltaY = Math.abs(event.getY() - mDownY);
-                    if (deltaX < mTouchSlop && deltaY < mTouchSlop) {
-                        if (mDoubleClickZoom) {
-                            if (mClickRunnableReady) { //说明已经有一个点击了, 再点进来就是双击了
-                                mClickRunnableReady = false;
-                                removeCallbacks(mClickRunable);
-                                onDoubleClickZoom(event.getX(), event.getY());
-                            } else {
-                                removeCallbacks(mClickRunable);
-                                postDelayed(mClickRunable, mDoubleClickDuration);
-                                mClickRunnableReady = true;
-                            }
-                        } else {
-                            if (mOnClickListener != null) {
-                                mOnClickListener.onClick(this);
-                            }
-                        }
-                    }
+                if (mCanClick && mOnClickListener != null) {
+                    mOnClickListener.onClick(this);
                 }
-                initConsumeXy();
                 mMode = NONE;
                 mPointCount = 0;
                 break;
         }
-        return mConsumeXY;
+        return mMode;
     }
 
     private void startScaleAnim(float start, float end) {
@@ -586,7 +507,7 @@ public class ZoomImageView extends AppCompatImageView {
         }
         mIsZoomAniming = true;
         ValueAnimator anim = ValueAnimator.ofFloat(start, end);
-        anim.setDuration(250);
+        anim.setDuration(200);
         anim.setInterpolator(sInterpolator);
         if (zoomBacklistener == null) {
             zoomBacklistener = new AnimatorUpdateListener() {
@@ -606,7 +527,7 @@ public class ZoomImageView extends AppCompatImageView {
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                checkAndSetTranslate(1, 1); //是缩放动画完成后图片边缘不进入最小剪切框或者边缘狂, 纠正一下
+                checkAndSetTranslate(0, 0);
                 mIsZoomAniming = false;
                 mMode = NONE;
             }
@@ -654,7 +575,7 @@ public class ZoomImageView extends AppCompatImageView {
 
         mMatrix.postTranslate(dx, dy);
         setImageMatrix(mMatrix);
-        checkSide();
+        getMatrixXY(mMatrix);
     }
 
     private float getDistance(MotionEvent event) {
@@ -692,14 +613,7 @@ public class ZoomImageView extends AppCompatImageView {
         mMatrixY = mTmpArray[Matrix.MTRANS_Y];
     }
 
-    /**
-     * 返回x和y方向上的实际消耗的值
-     *
-     * @param deltaX
-     * @param deltaY
-     * @return
-     */
-    private float[] checkAndSetTranslate(float deltaX, float deltaY) {
+    private void checkAndSetTranslate(float deltaX, float deltaY) {
         if (mRedundantXSpace <= 0) {
             deltaX = 0;
         } else {
@@ -723,18 +637,14 @@ public class ZoomImageView extends AppCompatImageView {
         if (deltaX != 0 || deltaY != 0) {
             mMatrix.postTranslate(deltaX, deltaY);
             setImageMatrix(mMatrix);
-            checkSide();
+            getMatrixXY(mMatrix);
+            checkIsOnSide();
         }
-        return new float[]{deltaX, deltaY};
     }
 
-    private void checkSide() {
-        getMatrixXY(mMatrix);
-
+    private void checkIsOnSide() {
         mIsOnLeftSide = false;
         mIsOnRightSide = false;
-        mIsOnTopSide = false;
-        mIsOnBottomSide = false;
         if (mMatrixX >= mClipRect.left) {
             mIsOnLeftSide = true;
         }
@@ -777,35 +687,16 @@ public class ZoomImageView extends AppCompatImageView {
         return mBitmap;
     }
 
-    public void setDoubleClickZoom(boolean can) {
-        mDoubleClickZoom = can;
-    }
+    //点击相关begin
+    private float mDownX;
+    private float mDownY;
+    private boolean mCanClick;
+    OnClickListener mOnClickListener;
     @Override
     public void setOnClickListener(@Nullable OnClickListener l) {
         mOnClickListener = l;
     }
     //点击相关end
-
-    //双击相关begin
-    private volatile boolean mClickRunnableReady;
-    private Runnable mClickRunable = new Runnable() {
-        @Override
-        public void run() {
-            mClickRunnableReady = false;
-            if (mOnClickListener != null) {
-                mOnClickListener.onClick(ZoomImageView.this);
-            }
-        }
-    };
-    public void onDoubleClickZoom(float centerX, float centerY) {
-        mCenter.set(centerX, centerY);
-        if (mCurrentScale <= mDoubleClickMinScale) {
-            startScaleAnim(mCurrentScale, mDoubleClickMaxScale);
-        } else {
-            startScaleAnim(mCurrentScale, mDoubleClickMinScale);
-        }
-    }
-    //双击相关end
 
     //***为了模拟ios的抬手后自动滚动一段距离而实现begin
 //    MyScroller mScroller;
@@ -840,7 +731,7 @@ public class ZoomImageView extends AppCompatImageView {
 //            mLastX = currentX;
 //            mLastY = currentY;
 //
-//            Log.d("zoomview", "currentX, deltaX = " + currentX + ", " + deltaX);
+//            LogHelper.d("zoomview", "currentX, deltaX = " + currentX + ", " + deltaX);
 //            checkAndSetTranslate(deltaX, deltaY);
 //        }
 //    }

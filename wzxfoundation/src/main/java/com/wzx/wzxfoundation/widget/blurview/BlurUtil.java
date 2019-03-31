@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.util;
+package com.wzx.wzxfoundation.widget.blurview;
 
 import android.annotation.TargetApi;
 import android.content.Context;

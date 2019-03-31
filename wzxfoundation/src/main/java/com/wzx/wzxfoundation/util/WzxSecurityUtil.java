@@ -20,7 +20,7 @@ import java.security.NoSuchAlgorithmException;
 /**
  * 抄袭的阿里oss里面的BinaryUtil, 用来进行MD5, base64等操作
  */
-public class BinaryUtil {
+public class WzxSecurityUtil {
     public static String toBase64String(byte[] binaryData) {
         return Base64.encodeToString(binaryData, Base64.DEFAULT);
     }

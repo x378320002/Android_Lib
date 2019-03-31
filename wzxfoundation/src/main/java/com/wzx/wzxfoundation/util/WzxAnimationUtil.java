@@ -10,7 +10,7 @@ import android.view.animation.OvershootInterpolator;
 /**
  * 生成属性动画的工具类
  */
-public class MyAnimationUtil {
+public class WzxAnimationUtil {
     /**
      * 点击view后使view放大缩小的方法, 大多数用来如点击赞, 图标放大缩小加个动画
      * @param view

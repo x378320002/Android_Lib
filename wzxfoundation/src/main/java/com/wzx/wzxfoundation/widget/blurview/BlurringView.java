@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.util;
+package com.wzx.wzxfoundation.widget.blurview;
 
 import android.content.Context;
 import android.graphics.Bitmap;

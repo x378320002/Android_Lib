@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.refreshlayout;
+package com.wzx.wzxfoundation.widget.refreshlayout;
 
 import android.content.Context;
 import android.util.AttributeSet;

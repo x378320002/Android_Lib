@@ -26,4 +26,22 @@ dependencies {
     api 'com.android.support.constraint:constraint-layout:1.1.3'
     api 'in.srain.cube:ultra-ptr:1.0.11' //下拉刷新
     api "com.airbnb.android:lottie:2.7.0" //动画库
+
+    //retrofit，底层网络库用okhttp, 默认里面已经集成了okhttp3，JSON库解析用GSON，所以需要GSON
+    api 'com.squareup.retrofit2:retrofit:2.5.0'
+    //retrofit与GSON, rxjava集成的中间件
+    api 'com.squareup.retrofit2:converter-gson:2.5.0'
+    api 'com.squareup.retrofit2:adapter-rxjava:2.5.0'
+    api 'com.squareup.okhttp3:okhttp:3.12.0'
+    api 'com.squareup.okhttp3:logging-interceptor:3.12.0'
+    //glide
+    api 'com.github.bumptech.glide:glide:4.9.0'
+    //glide使用okhttp3的中间件
+    api 'com.github.bumptech.glide:okhttp3-integration:4.9.0'
+    //GSON
+    api 'com.google.code.gson:gson:2.8.5'
+    //RX
+    api 'io.reactivex:rxjava:1.3.8'
+    api 'io.reactivex:rxandroid:1.2.1'
+    api 'org.greenrobot:eventbus:3.0.0'
 }

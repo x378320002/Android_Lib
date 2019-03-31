@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.zoomview_viewpager;
+package com.wzx.wzxfoundation.widget.zoomview_viewpager;
 
 import android.content.Context;
 import android.support.v4.view.ViewPager;

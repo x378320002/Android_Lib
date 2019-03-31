@@ -276,7 +276,7 @@ public class CommonUtil {
         if (TextUtils.isEmpty(imei)) {
             //首先获取一个类似唯一的东西, 不同品牌不同型号的手机, 这个值应该不同, 然后再加上一个时间戳, 再加个然随机数, 缺点是每次重装都会变
             String serial = Build.BRAND + Build.MANUFACTURER + Build.PRODUCT + System.currentTimeMillis() + Math.random();
-            imei = BinaryUtil.calculateMd5Str(serial);
+            imei = WzxSecurityUtil.calculateMd5Str(serial);
             sharedPreferences.edit().putString(KEY_SP_IMEI, imei).apply();
         }
         return imei;
