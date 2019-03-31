@@ -16,6 +16,7 @@ public abstract class BaseView extends FrameLayout implements BaseViewInterface 
     private View mLoadingLayout;
     private View mNoContentLayout;
     protected Context mContext;
+    protected boolean mResumed;
 
     public BaseView(@NonNull Context context) {
         this(context, null);
@@ -109,12 +110,12 @@ public abstract class BaseView extends FrameLayout implements BaseViewInterface 
 
     @Override
     public void onResume() {
-
+        mResumed = true;
     }
 
     @Override
     public void onPause() {
-
+        mResumed = false;
     }
 
     @Override
