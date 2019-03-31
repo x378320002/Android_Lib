@@ -13,8 +13,6 @@ import android.view.View;
 public class ViewPagerIndicaterLineView extends View {
     private Context mContext;
     private int mCount;
-    private int mGap; //点和点之间的距离
-    private int mWidth; //控件宽度, 需要自己计算
     private Paint mSelectPaint;
     private int mLineLength; //画线段的长度
     private int mLineLengthShrink; //画可伸缩线段的长度,
@@ -36,7 +34,7 @@ public class ViewPagerIndicaterLineView extends View {
         mContext = context;
 
         mSelectPaint = new Paint();
-        mSelectPaint.setColor(0xFFFFFFFF);
+        mSelectPaint.setColor(0xFFFF0000);
         mSelectPaint.setDither(true);
         mSelectPaint.setAntiAlias(true);
     }
