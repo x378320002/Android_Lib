@@ -133,4 +133,10 @@ public abstract class DefaultHFRecyclerAdapter extends HeaderFooterRecyclerViewA
         }
     }
     //默认的头部实现 , 无头部, end
+
+    //默认的内容实现
+    @Override
+    protected void onBindContentItemViewHolder(DefaultViewHolder contentViewHolder, int position) {
+        contentViewHolder.renderView(position);
+    }
 }

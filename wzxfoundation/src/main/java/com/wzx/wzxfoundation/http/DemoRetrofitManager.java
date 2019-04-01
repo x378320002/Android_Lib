@@ -1,6 +1,7 @@
 package com.wzx.wzxfoundation.http;
 
 import com.wzx.wzxfoundation.util.LogHelper;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -13,24 +14,27 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class RetrofitManager<T> {
+/**
+ * 示例, demo, 不能直接用
+ */
+public class DemoRetrofitManager {
     //单例begin
-    private static RetrofitManager sInstance = null;
-    private final Retrofit mRetrofit;
+    private static DemoRetrofitManager sInstance = null;
+    private final DemoRetrofitApiInterface mApis;
 
-    public static RetrofitManager getInstance() {
+    public static DemoRetrofitApiInterface getInstance() {
         if (sInstance == null) {
-            synchronized (RetrofitManager.class) {
+            synchronized (DemoRetrofitManager.class) {
                 if (sInstance == null) {
-                    sInstance = new RetrofitManager();
+                    sInstance = new DemoRetrofitManager();
                 }
             }
         }
-        return sInstance;
+        return sInstance.mApis;
     }
     //单例end
 
-    private RetrofitManager() {
+    private DemoRetrofitManager() {
         OkHttpClient.Builder builder = new OkHttpClient.Builder();
         builder.connectTimeout(15, TimeUnit.SECONDS);
         builder.readTimeout(30, TimeUnit.SECONDS);
@@ -57,16 +61,12 @@ public class RetrofitManager<T> {
         }
 
         OkHttpClient build = builder.build();
-        mRetrofit = new Retrofit.Builder()
+        Retrofit mRetrofit = new Retrofit.Builder()
                 .client(build)
                 .baseUrl("http://192.168.31.210:8080")
                 .addConverterFactory(GsonConverterFactory.create())
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                 .build();
-//        mApis = mRetrofit.create(RetrofitApiInterface.class);
-    }
-
-    public <T> T create(final Class<T> service) {
-        return mRetrofit.create(service);
+        mApis = mRetrofit.create(DemoRetrofitApiInterface.class);
     }
 }

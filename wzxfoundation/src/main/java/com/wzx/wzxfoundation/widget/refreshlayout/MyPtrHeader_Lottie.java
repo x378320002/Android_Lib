@@ -11,6 +11,7 @@ import android.widget.FrameLayout;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.wzx.wzxfoundation.R;
+
 import in.srain.cube.views.ptr.PtrFrameLayout;
 import in.srain.cube.views.ptr.PtrUIHandler;
 import in.srain.cube.views.ptr.indicator.PtrIndicator;
@@ -18,42 +19,53 @@ import in.srain.cube.views.ptr.indicator.PtrIndicator;
 /**
  * Created by wangzixu on 2017/9/1.
  */
-public class MyPtrHeader extends FrameLayout implements PtrUIHandler {
-    public MyPtrHeader(@NonNull Context context) {
+public class MyPtrHeader_Lottie extends FrameLayout implements PtrUIHandler {
+    private LottieAnimationView mView;
+
+    public MyPtrHeader_Lottie(@NonNull Context context) {
         this(context, null);
     }
 
-    public MyPtrHeader(@NonNull Context context, @Nullable AttributeSet attrs) {
+    public MyPtrHeader_Lottie(@NonNull Context context, @Nullable AttributeSet attrs) {
         this(context, attrs, 0);
     }
 
-    public MyPtrHeader(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
+    public MyPtrHeader_Lottie(@NonNull Context context, @Nullable AttributeSet attrs, @AttrRes int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         initViews();
     }
 
     private void initViews() {
-        LayoutInflater.from(getContext()).inflate(R.layout.wzx_ptrheader, this);
+        LayoutInflater.from(getContext()).inflate(R.layout.wzx_ptrheader_lottie, this);
+        mView = findViewById(R.id.progress_bar);
     }
 
     //1
     @Override
     public void onUIRefreshPrepare(PtrFrameLayout frame) {
+        Log.d("myptr", "onUIRefreshPrepare");
+        mView.setProgress(0);
     }
 
     //2
     @Override
     public void onUIRefreshBegin(PtrFrameLayout frame) {
+        Log.d("myptr", "onUIRefreshBegin");
+        mView.playAnimation();
     }
 
     //3
     @Override
     public void onUIRefreshComplete(PtrFrameLayout frame) {
+        Log.d("myptr", "onUIRefreshComplete");
     }
 
     //4
     @Override
     public void onUIReset(PtrFrameLayout frame) {
+        mView.setProgress(0);
+        mView.cancelAnimation();
+        Log.d("myptr", "onUIReset");
     }
 
     @Override

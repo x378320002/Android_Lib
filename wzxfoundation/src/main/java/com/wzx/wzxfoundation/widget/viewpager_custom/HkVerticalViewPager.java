@@ -1,4 +1,4 @@
-package com.wzx.wzxfoundation.viewpager_custom;
+package com.wzx.wzxfoundation.widget.viewpager_custom;
 
 import android.content.Context;
 import android.content.res.Resources;
