@@ -33,7 +33,12 @@ public abstract class BaseView extends FrameLayout implements BaseViewInterface 
         if (layoutId > 0) {
             LayoutInflater.from(context).inflate(layoutId, this, true);
         }
-        init();
+        post(new Runnable() {
+            @Override
+            public void run() {
+                init();
+            }
+        });
     }
     protected abstract int getLayoutId();
 

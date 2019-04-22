@@ -101,13 +101,8 @@ public abstract class DefaultHFRecyclerAdapter extends HeaderFooterRecyclerViewA
         } catch (Exception e) {
             e.printStackTrace();
         }
-        DefaultViewHolder holder = createMyFooterViewHolder(footerView);
+        DefaultViewHolder holder = new DefaultViewHolder(footerView);
         return holder;
-    }
-
-    //***子类需要覆盖此方方提供返回的holder, 因为子类的holder都是不一样的, 继承VH的, 具体写法见下面注释
-    protected DefaultViewHolder createMyFooterViewHolder(View footerView) {
-        return new DefaultViewHolder(footerView);
     }
 
     @Override
