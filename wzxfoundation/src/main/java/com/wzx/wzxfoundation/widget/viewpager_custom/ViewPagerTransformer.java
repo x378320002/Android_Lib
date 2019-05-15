@@ -109,4 +109,51 @@ public class ViewPagerTransformer {
             }
         }
     }
+
+    /**
+     * 左右变小, 中间放大的卡片效果, viewpager和viewpager的根布局都得加clipChildren=false属性
+     */
+    public static class LoopTransformer implements ViewPager.PageTransformer {
+        private static final float MIN_SCALE = 0.85f;
+
+        @Override
+        public void transformPage(View view, float position) {
+            ///**
+            // * 过滤那些 <-1 或 >1 的值，使它区于【-1，1】之间
+            // */
+            //if (position < -1) {
+            //    position = -1;
+            //} else if (position > 1) {
+            //    position = 1;
+            //}
+            ///**
+            // * 判断是前一页 1 + position ，右滑 pos -> -1 变 0
+            // * 判断是后一页 1 - position ，左滑 pos -> 1 变 0
+            // */
+            //float tempScale = position < 0 ? 1 + position : 1 - position; // [0,1]
+            //float scaleValue = MIN_SCALE + tempScale * 0.1f; // [0,1]
+            //view.setScaleX(scaleValue);
+            //view.setScaleY(scaleValue);
+
+            if (position < -1) { // [-Infinity,-1)
+                // This page is way off-screen to the left.
+                view.setScaleX(MIN_SCALE);
+                view.setScaleY(MIN_SCALE);
+            } else if (position <= 0) { // [-1,0]
+                // Use the default slide transition when moving to the left page
+                float scale = (1.0f - MIN_SCALE) * position + 1.0f;
+                view.setScaleX(scale);
+                view.setScaleY(scale);
+            } else if (position <= 1) { // (0,1]
+                float scale = (MIN_SCALE - 1.0f) * position + 1.0f;
+                view.setScaleX(scale);
+                view.setScaleY(scale);
+            } else { // (1,+Infinity]
+                // This page is way off-screen to the right.
+                // This page is way off-screen to the left.
+                view.setScaleX(MIN_SCALE);
+                view.setScaleY(MIN_SCALE);
+            }
+        }
+    }
 }
