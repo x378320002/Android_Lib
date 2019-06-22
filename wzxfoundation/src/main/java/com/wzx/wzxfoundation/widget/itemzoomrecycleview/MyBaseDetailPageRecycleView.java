@@ -10,6 +10,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -35,12 +36,13 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
     private ViewGroup.LayoutParams mOriLp; //原view的参数lp
     private int mOriIndex;
     private ViewGroup mOriParent; //原view的父布局
-    private int mOriId;
+    private int mOriId = 0;
+    private View mPlaceHolderView;//用来放到原来的位置, 占位用的view
 
     private int[] mOriTopLeft = new int[2];
 
     private float mDonwX, mDownY; //手指按下的点
-    private Activity mActivity;
+    private BaseActivity mActivity;
     private int mState; //响应自定义手势的几个状态, 0 默认状态, 系统处理, 1 准备状态  2拦截掉自己处理图片的状态 3回复到原位置的动画状态
     private PointF mLastCenter = new PointF(); //双指中心点
     private double mLastDistence; //双指距离
@@ -59,6 +61,7 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
 
     public void setActivity(BaseActivity activity) {
         mActivity = activity;
+        mPlaceHolderView = new View(activity);
     }
 
     public void setOriId(int oriId) {
@@ -94,7 +97,9 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
             public void onAnimationEnd(Animator animation) {
                 //mImageView.setVisibility(GONE);
                 //mOriImageView.setVisibility(VISIBLE);
+                //把占位view拿出来, 把原来的view放回去
                 mDecorView.removeView(mOriView);
+                mOriParent.removeView(mPlaceHolderView);
                 mOriParent.addView(mOriView, mOriIndex, mOriLp);
                 mState = 0;
             }
@@ -122,8 +127,10 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
                         double distence = getDistence(x1, y1, x2, y2);
                         if (Math.abs(distence - mLastDistence) >= 10) {
                             mDecorView = (ViewGroup) mActivity.getWindow().getDecorView();
-                            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, mOriView.getHeight());
+                            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(mOriView.getWidth(), mOriView.getHeight());
                             lp.topMargin = mOriTopLeft[1];
+                            lp.leftMargin = mOriTopLeft[0];
+                            lp.gravity = Gravity.LEFT | Gravity.TOP;
 
                             //新建view的方案, 只支持imageview
                             //if (mImageView == null) {
@@ -144,11 +151,13 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
                             //mImageView.setVisibility(VISIBLE);
                             //mOriImageView.setVisibility(INVISIBLE);
 
-                            //把原来的view拿出来, 什么view都支持, 可以支持视频
+                            //把原来的view拿出来, 把占位view放进去
                             mOriLp = mOriView.getLayoutParams();
                             mOriParent = (ViewGroup) mOriView.getParent();
                             mOriIndex = mOriParent.indexOfChild(mOriView);
                             mOriParent.removeView(mOriView);
+                            mPlaceHolderView.setId(mOriView.getId());
+                            mOriParent.addView(mPlaceHolderView, mOriIndex, mOriLp);
                             mDecorView.addView(mOriView, lp);
 
                             //修复因为阈值引起的第一帧跳变
@@ -221,11 +230,11 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
                             int raw_x2 = (int) (raw_x1 + x2 - x1);
                             int raw_y2 = (int) (raw_y1 + y2 - y1);
 
-                            ImageView imageView = findUnderImageView((ViewGroup) view1, raw_x1, raw_y1, raw_x2, raw_y2);
+                            View view = findUnderImageView((ViewGroup) view1, raw_x1, raw_y1, raw_x2, raw_y2);
                             //ImageView imageView = findUnderImageView2((ViewGroup) view1);
 
-                            if (imageView != null) {
-                                mOriView = imageView;
+                            if (view != null) {
+                                mOriView = view;
                                 //LogHelper.d("wangzixu", "detailpage onTouch view1.findViewById mOriLocation  = " + mOriLocation + ", " + mOriTopLeft[0] + "," + mOriTopLeft[1]);
                                 mState = 1; //双指按下, 并且双指按下的条目中有imageview, 并且双指的点都在imageview的区域中
                                 //mLastCenter.x = (x1 + x2) * 0.5f;
@@ -249,10 +258,10 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
     }
 
     //算法一, 依赖正确的x,y, xy是相对屏幕的坐标,
-    private ImageView findUnderImageView(ViewGroup parent, int x1, int y1, int x2, int y2) {
+    private View findUnderImageView(ViewGroup parent, int x1, int y1, int x2, int y2) {
         for (int i = parent.getChildCount(); i >= 0; i--) {
             View child = parent.getChildAt(i);
-            if (child != null && child.getId() == mOriId && child instanceof ImageView) {
+            if (child != null && child.getId() == mOriId) {
                 //child.getGlobalVisibleRect(mOriLocation);
                 child.getLocationOnScreen(mOriTopLeft);
                 //LogHelper.d("wangzixu", "detailpage onTouch view1.findViewById mOriLocation  =  " + mOriTopLeft[0] + "," + mOriTopLeft[1]);
@@ -261,13 +270,13 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
                 boolean contain1 = viewContainXY(child, mOriTopLeft, x1, y1);
                 boolean contain2 = viewContainXY(child, mOriTopLeft, x2, y2);
                 if (contain1 && contain2) {
-                    return (ImageView) child;
+                    return child;
                 }
                 if (contain1 ^ contain2) { //如果view包含其中一个点, 说明两个手指落在不同的view上了, 直接返回null
                     return null;
                 }
             } else if (child instanceof ViewGroup) {
-                ImageView view = findUnderImageView((ViewGroup) child, x1, y1, x2, y2);
+                View view = findUnderImageView((ViewGroup) child, x1, y1, x2, y2);
                 if (view != null) {
                     return view;
                 }
@@ -277,24 +286,24 @@ public class MyBaseDetailPageRecycleView extends RecyclerView {
     }
 
     //算法2
-    private ImageView findUnderImageView2(ViewGroup parent) {
-        ArrayList<ImageView> changeIdlist = new ArrayList<>();
-        ImageView imageView = parent.findViewById(mOriId);
-        while (imageView != null) {
+    private View findUnderImageView2(ViewGroup parent) {
+        ArrayList<View> changeIdlist = new ArrayList<>();
+        View view = parent.findViewById(mOriId);
+        while (view != null) {
             //找到的imageview有可能出在viewpager中, 在屏幕外了, 需要纠正找到屏幕中的
-            imageView.getLocationOnScreen(mOriTopLeft);
+            view.getLocationOnScreen(mOriTopLeft);
             if (mOriTopLeft[0] == 0) {
                 break;
             } else {
-                imageView.setId(R.id.footer_item_hint);//随便设置一个id, 不要和原来的重复就好, 最好设置一个这界面都找不到的id
-                changeIdlist.add(imageView);
-                imageView = parent.findViewById(mOriId);
+                view.setId(0);//随便设置一个id, 不要和原来的重复就好, 最好设置一个这界面都找不到的id
+                changeIdlist.add(view);
+                view = parent.findViewById(mOriId);
             }
         }
         for (int i = 0; i < changeIdlist.size(); i++) {
             changeIdlist.get(i).setId(mOriId); //一定需要把id恢复
         }
-        return imageView;
+        return view;
     }
 
     private double getDistence(float x1, float y1, float x2, float y2) {
